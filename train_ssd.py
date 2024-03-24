@@ -37,7 +37,7 @@ parser.add_argument('--net', default="mb1-ssd",
                     help="The network architecture, it can be mb1-ssd, mb1-ssd-lite, mb2-ssd-lite or mb3-ssd-lite.")
 parser.add_argument('--freeze-base-net', action='store_true',
                     help="Freeze base net layers.")
-parser.add_argument('--freeze-net', default=False, action='store_true',
+parser.add_argument('--freeze-net', action='store_true',
                     help="Freeze all the layers except the prediction head.")
 
 # Params for loading pretrained basenet or checkpoints.
@@ -74,7 +74,7 @@ logging.basicConfig(stream=sys.stdout, level=getattr(logging, 'INFO', logging.IN
 
 # Tensorboard
 tensorboard = SummaryWriter(log_dir=os.path.join(
-    args.checkpoint_folder, "tensorboard"))
+    args.checkpoint_folder, "tensorboard", f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"))
 
 # CPU or GPU training
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available()
@@ -197,11 +197,7 @@ if __name__ == '__main__':
         create_net = create_mobilenetv1_ssd
         config = mobilenetv1_ssd_config
         pretrained_ssd = 'pretrained/mobilenet-v1-ssd-mp-0_675.pth'
-        config.set_image_size(30)
-    elif args.net == 'mb1-ssd-lite':
-        create_net = create_mobilenetv1_ssd_lite
-        config = mobilenetv1_ssd_config
-        pretrained_ssd = 'pretrained/mobilenet-v1-ssd-mp-0_675.pth'
+        config.set_image_size(300)
     elif args.net == 'mb2-ssd-lite':
         def create_net(num): return create_mobilenetv2_ssd_lite(
             num, width_mult=1.0)
@@ -210,7 +206,7 @@ if __name__ == '__main__':
     elif args.net == 'mb3-ssd-lite':
         def create_net(num): return create_mobilenetv3_ssd_lite(num)
         config = mobilenetv1_ssd_config
-        pretrained_ssd = 'pretrained/ssdlite320_mobilenet_v3_large_coco-a79551df.pth'
+        pretrained_ssd = 'pretrained/ssdlite_450_mobilenetv3_large.pth'
     else:
         logging.fatal("The net type is wrong.")
         parser.print_help(sys.stderr)
@@ -311,7 +307,6 @@ if __name__ == '__main__':
         net.load(args.resume)
     elif pretrained_ssd:
         logging.info(f"Init from pretrained SSD {pretrained_ssd}")
-        net.init_from_pretrained_ssd(pretrained_ssd)
 
         if not os.path.exists(pretrained_ssd):
             logging.fatal("The net is wrong.")
@@ -326,18 +321,17 @@ if __name__ == '__main__':
     # Move the model to GPU
     net.to(DEVICE)
 
-    # Define loss function and optimizer
+    # Define loss function and optimizer (average stochastic gradient descent)
     criterion = MultiboxLoss(config.priors, iou_threshold=0.5, neg_pos_ratio=3,
                              center_variance=0.1, size_variance=0.2, device=DEVICE)
     optimizer = torch.optim.ASGD(
         params, lr=args.lr, weight_decay=args.weight_decay)
 
-    logging.info(f"Learning rate: {args.lr}")
-
     # Set learning rate policy
+    logging.info(f"Learning rate: {args.lr}")
     logging.info("Uses CosineAnnealingLR scheduler.")
     scheduler = CosineAnnealingLR(
-        optimizer, args.num_epochs, last_epoch=last_epoch)
+        optimizer, 100, last_epoch=last_epoch)
 
     # Train for the desired number of epochs
     logging.info(f"Start training from epoch {last_epoch + 1}.")

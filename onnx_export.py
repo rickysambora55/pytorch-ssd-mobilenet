@@ -14,14 +14,20 @@ from vision.ssd.config import mobilenetv1_ssd_config
 
 # parse command line
 parser = argparse.ArgumentParser()
-parser.add_argument('--net', default="mb1-ssd", help="The network architecture, it can be mb1-ssd, mb1-ssd-lite, mb2-ssd-lite or mb3-ssd-lite.")
-parser.add_argument('--input', type=str, default='', help="path to input PyTorch model (.pth checkpoint)")
-parser.add_argument('--output', type=str, default='', help="desired path of converted ONNX model (default: <NET>.onnx)")
-parser.add_argument('--labels', type=str, default='labels.txt', help="name of the class labels file")
-parser.add_argument('--batch-size', type=int, default=1, help="batch size of the model to be exported (default=1)")
-parser.add_argument('--model', type=str, default='', help="directory to look for the input PyTorch model in, and export the converted ONNX model to (if --output doesn't specify a directory)")
+parser.add_argument('--net', default="mb1-ssd",
+                    help="The network architecture, it can be mb1-ssd, mb1-ssd-lite, mb2-ssd-lite or mb3-ssd-lite.")
+parser.add_argument('--input', type=str, default='',
+                    help="path to input PyTorch model (.pth checkpoint)")
+parser.add_argument('--output', type=str, default='',
+                    help="desired path of converted ONNX model (default: <NET>.onnx)")
+parser.add_argument('--labels', type=str, default='labels.txt',
+                    help="name of the class labels file")
+parser.add_argument('--batch', type=int, default=1,
+                    help="batch size of the model to be exported (default=1)")
+parser.add_argument('--model-dir', '--model', type=str, default='',
+                    help="directory to look for the input PyTorch model in, and export the converted ONNX model to (if --output doesn't specify a directory)")
 
-args = parser.parse_args() 
+args = parser.parse_args()
 print(args)
 
 # set the device
@@ -31,7 +37,7 @@ print(f"=> running on device {device}")
 # format input model paths
 if args.model_dir:
     args.model_dir = os.path.expanduser(args.model_dir)
-    
+
     # find the checkpoint with the lowest loss
     if not args.input:
         best_loss = 10000
@@ -45,16 +51,17 @@ if args.model_dir:
                     args.input = os.path.join(args.model_dir, file)
             except ValueError:
                 args.input = os.path.join(args.model_dir, file)
-                continue    
+                continue
 
         if not args.input:
-            raise IOError(f"couldn't find valid .pth checkpoint under '{args.model_dir}'")
-            
+            raise IOError(
+                f"couldn't find valid .pth checkpoint under '{args.model_dir}'")
+
         print(f"=> found best checkpoint with loss {best_loss} ({args.input})")
-        
+
     # append the model dir (if needed)
     if not os.path.isfile(args.input):
-	    args.input = os.path.join(args.model_dir, args.input)
+        args.input = os.path.join(args.model_dir, args.input)
 
     if not os.path.isfile(args.labels):
         args.labels = os.path.join(args.model_dir, args.labels)
@@ -79,7 +86,7 @@ elif args.net == 'mb3-ssd-lite':
 else:
     print("The net type is wrong. It should be one of vgg16-ssd, mb1-ssd and mb1-ssd-lite.")
     sys.exit(1)
-    
+
 # load the model checkpoint
 print(f"=> loading checkpoint:  {args.input}")
 
@@ -88,19 +95,20 @@ net.to(device)
 net.eval()
 
 # create example image data
-dummy_input = torch.randn(args.batch_size, 3, 300, 300).cuda()
+dummy_input = torch.randn(args.batch, 3, 300, 300).cuda()
 
 # format output model path
 if not args.output:
-	args.output = args.net + '.onnx'
+    args.output = args.net + '.onnx'
 
 if args.model_dir and args.output.find('/') == -1 and args.output.find('\\') == -1:
-	args.output = os.path.join(args.model_dir, args.output)
+    args.output = os.path.join(args.model_dir, args.output)
 
 # export to ONNX
 input_names = ['input_0']
 output_names = ['scores', 'boxes']
 
 print("=> exporting model to ONNX...")
-torch.onnx.export(net, dummy_input, args.output, verbose=True, input_names=input_names, output_names=output_names)
+torch.onnx.export(net, dummy_input, args.output, verbose=True,
+                  input_names=input_names, output_names=output_names)
 print(f"model exported to:  {args.output}")

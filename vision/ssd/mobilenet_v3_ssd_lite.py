@@ -31,7 +31,7 @@ def SeperableConv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=
 def create_mobilenetv3_ssd_lite(num_classes, width_mult=1.0, is_test=False):
     base_net = MobileNetV3().features
 
-    source_layer_indexes = [GraphPath(11, 'conv'), 20,]
+    source_layer_indexes = [GraphPath(11, 'conv', 3), 20,]
     # extras = ModuleList([
     #     InvertedResidual(1280, 512, stride=2, expand_ratio=0.2),
     #     InvertedResidual(512, 256, stride=2, expand_ratio=0.25),
