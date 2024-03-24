@@ -6,10 +6,8 @@ models
 
 eval_results/
 
-# Pytorch Models
-*.pth
-
 # images
+*.jpeg
 *.jpg
 *.png
 
