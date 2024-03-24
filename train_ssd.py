@@ -35,7 +35,7 @@ parser.add_argument('--datasets', '--data', nargs='+',
 # Params for network
 parser.add_argument('--net', default="mb1-ssd",
                     help="The network architecture, it can be mb1-ssd, mb1-ssd-lite, mb2-ssd-lite or mb3-ssd-lite.")
-parser.add_argument('--freeze-base-net', default=True, action='store_true',
+parser.add_argument('--freeze-base-net', action='store_true',
                     help="Freeze base net layers.")
 parser.add_argument('--freeze-net', default=False, action='store_true',
                     help="Freeze all the layers except the prediction head.")
@@ -57,7 +57,7 @@ parser.add_argument('--num-epochs', '--epoch', default=30, type=int,
                     help='the number epochs')
 parser.add_argument('--num-workers', '--workers', default=2, type=int,
                     help='Number of workers used in dataloading')
-parser.add_argument('--validation-mean-ap', default=True, action='store_true',
+parser.add_argument('--validation-mean-ap', action='store_true',
                     help='Perform computation of Mean Average Precision (mAP) during validation')
 parser.add_argument('--debug-steps', default=10, type=int,
                     help='Set the debug log output frequency.')
@@ -203,7 +203,8 @@ if __name__ == '__main__':
         config = mobilenetv1_ssd_config
         pretrained_ssd = 'pretrained/mobilenet-v1-ssd-mp-0_675.pth'
     elif args.net == 'mb2-ssd-lite':
-        def create_net(num): return create_mobilenetv2_ssd_lite(num, 1)
+        def create_net(num): return create_mobilenetv2_ssd_lite(
+            num, width_mult=1.0)
         config = mobilenetv1_ssd_config
         pretrained_ssd = 'pretrained/mb2-ssd-lite-mp-0_686.pth'
     elif args.net == 'mb3-ssd-lite':
